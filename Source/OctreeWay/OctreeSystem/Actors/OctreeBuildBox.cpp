@@ -188,8 +188,6 @@ void AOctreeBuildBox::MakeOctreeTree(uint32 RootOctreeIndex)
         OctreeRef->IsFree = IsFree;
         OctreeRef->CenterNodeLocation = TreeLocation;
         OctreeRef->Depth = Depth;
-
-    	ProcessGenerateOctrees(OctreeRef);
         
         if (!IsFree && Depth < OctreeDepth)
         {

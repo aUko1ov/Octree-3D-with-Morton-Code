@@ -61,8 +61,6 @@ protected:
 	FVector StartPosition;
 	
 	uint32 CountRootNodes_XYZ[3];
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "OctreeWay|Render")
 	int32 OctreeDepth = 3;
 
 	inline static const FVector ChildPositionOffsetByIndex[8] = {

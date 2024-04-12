@@ -3,6 +3,7 @@
 
 #include "CoreMinimal.h"
 #include "OctreeWay/OctreeSystem/OctreeObject.h"
+#include "OctreeWay/Utils/Morton.h"
 
 
 class UOctreeObject;
@@ -29,16 +30,25 @@ class FUint64ToObjectPtrArray
 {
 public:
 	// Добавление новой пары значений с проверкой уникальности ключа.
-	bool Add(uint64 Key, TObjectPtr<UOctreeObject> Object)
+	bool Add(uint64 Key, TObjectPtr<UOctreeObject> Object, bool InputWithoutUnique = false)
 	{
-		if (!Find(Key))
+		if (!InputWithoutUnique)
 		{
-			Data.Emplace(Key, Object);
-			bIsSorted = false; // Пометить массив как неотсортированный.
-			return true;
+			for (int32 Index = 0; Index < Data.Num(); ++Index)
+			{
+				const FUint64AndObjectPtr& Elem = Data[Index];
+				if (Elem.Key == Key)
+				{
+					return false; // Ключ уже существует.
+				}
+			}
 		}
-		return false;
+
+		Data.Add(FUint64AndObjectPtr(Key, Object)); // Добавляем новый элемент, если ключ уникальный.
+		bIsSorted = false; // Пометить массив как неотсортированный.
+		return true;
 	}
+
 
 	// Сортировка массива по ключам.
 	void Sort()
@@ -81,57 +91,34 @@ public:
 		return nullptr; // Если ключ не найден, возвращаем nullptr.
 	}
 
-	// Поиск TObjectPtr<UOctreeObject> с ближайшим uint64 Key к заданному параметру.
+	// Переопределение метода FindClosest для использования улучшенного линейного поиска
 	TObjectPtr<UOctreeObject> FindClosest(const uint64 Key)
 	{
-		if (Data.Num() == 0)
+		if (Data.IsEmpty())
 		{
-			return nullptr; // Массив пуст, возвращаем nullptr.
+			return nullptr; // Если массив пуст, возвращаем nullptr.
 		}
 
-		if (!bIsSorted)
-		{
-			Sort(); // Убедиться, что данные отсортированы перед поиском.
-		}
+		TObjectPtr<UOctreeObject> ClosestObject = nullptr;
+		uint64 MinDifference = UINT64_MAX; // Инициализируем с максимально возможным различием.
 
-		int32 Low = 0;
-		int32 High = Data.Num() - 1;
-		int32 ClosestIndex = -1;
-
-		while (Low <= High)
+		for (const auto& Elem : Data)
 		{
-			const int32 Mid = (Low + High) / 2;
-			if (Data[Mid].Key == Key)
+			uint64 CurrentDifference = FMath::Abs(static_cast<int64>(Elem.Key) - static_cast<int64>(Key));
+
+			// Обновляем ближайший объект и минимальную разницу, если находим меньшее значение.
+			if (CurrentDifference < MinDifference)
 			{
-				return Data[Mid].Value; // Точное совпадение найдено.
-			}
-
-			// Обновляем ближайший индекс.
-			const uint64 Difference = (Data[Mid].Key > Key) ? Data[Mid].Key - Key : Key - Data[Mid].Key;
-			const uint64 ClosestDifference = (ClosestIndex == -1) ? UINT64_MAX : (Data[ClosestIndex].Key > Key) ? Data[ClosestIndex].Key - Key : Key - Data[ClosestIndex].Key;
-
-			if (ClosestIndex == -1 || Difference < ClosestDifference) {
-				ClosestIndex = Mid;
-			}
-
-			if (Data[Mid].Key < Key)
-			{
-				Low = Mid + 1;
-			}
-			else
-			{
-				High = Mid - 1;
+				MinDifference = CurrentDifference;
+				ClosestObject = Elem.Value;
 			}
 		}
 
-		// После выхода из цикла, ClosestIndex должен указывать на элемент с ближайшим ключом.
-		if (ClosestIndex != -1)
-		{
-			return Data[ClosestIndex].Value;
-		}
-
-		return nullptr; // Не должны сюда попасть, но на всякий случай.
+		return ClosestObject; // Возвращаем объект с минимальной разницей.
 	}
+
+
+
 
 
 private:

@@ -16,10 +16,8 @@ void AOctreeBuildBoxPathfinding::BeginPlay()
 
 void AOctreeBuildBoxPathfinding::ProcessGenerateOctrees(UOctreeObject* NewOctree)
 {
-	if (NewOctree->Depth != 0 || !NewOctree->IsFree) return;
-	
 	const uint64 MortonCode = Morton::FVectorToMorton(NewOctree->CenterNodeLocation);
-	RootMortonOctreeArray.Add(MortonCode, NewOctree);
+	RootMortonOctreeArray.Add(MortonCode, NewOctree, true);
 }
 
 void AOctreeBuildBoxPathfinding::FindClosestChildrenToLocation(UOctreeObject* Octree, const uint64 MortonLoc)
@@ -58,9 +56,9 @@ void AOctreeBuildBoxPathfinding::FindTargetOctree()
 			const TObjectPtr<UOctreeObject> RootOctreeFind = RootMortonOctreeArray.FindClosest(MortonLoc);
 			if (IsValid(RootOctreeFind))
 			{
-				//FuncLib::DrawDebug3DCrosshair(GetWorld(), Morton::MortonToFVector(MortonLoc), 10000, FColor::Orange, 100, 10);
-				//FuncLib::DrawDebug3DCrosshair(GetWorld(), RootOctreeFind->CenterNodeLocation, 10000, FColor::Red, 100, 30);
-				//FindClosestChildrenToLocation(RootOctreeFind, MortonLoc);
+				FuncLib::DrawDebug3DCrosshair(GetWorld(), Morton::MortonToFVector(MortonLoc), 10000, FColor::Orange, 100, 10);
+				FuncLib::DrawDebug3DCrosshair(GetWorld(), RootOctreeFind->CenterNodeLocation, 10000, FColor::Red, 100, 30);
+				FindClosestChildrenToLocation(RootOctreeFind, MortonLoc);
 			}
 			return;
 		}
